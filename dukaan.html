@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NURALAM KI DUKAAN — Shiny Shop</title>
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --accent: #7c3aed; /* purple */
+      --accent-2: #06b6d4; /* teal */
+      --card-bg: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6));
+    }
+    @media (prefers-color-scheme:dark){
+      :root{ --card-bg: linear-gradient(135deg, rgba(10,10,12,0.65), rgba(18,18,23,0.6)); }
+    }
+    body{ font-family: Poppins, Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
+    .neon { box-shadow: 0 6px 30px rgba(124,58,237,0.18), 0 0 18px rgba(124,58,237,0.12); }
+    .glass { background: var(--card-bg); backdrop-filter: blur(8px); }
+
+    /* floating animation */
+    @keyframes floaty { 0%{transform:translateY(0)}50%{transform:translateY(-8px)}100%{transform:translateY(0)} }
+
+    /* product card tilt */
+    .tilt { transform-style: preserve-3d; transition: transform 300ms cubic-bezier(.2,.9,.3,1), box-shadow 300ms; will-change: transform; }
+    .tilt .inner  { transform-origin: center; }
+
+    /* shiny highlight */
+    .shiny::after{ content:''; position:absolute; left:-60%; top:0; width:60%; height:100%; transform:skewX(-18deg) translateX(0); background:linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.35), rgba(255,255,255,0.05)); pointer-events:none; transition:transform 0.8s ease-in-out; }
+    .tilt:hover .shiny::after{ transform:skewX(-18deg) translateX(200%); }
+
+    /* responsive hero image floating */
+    .hero-float{ animation: floaty 6s ease-in-out infinite; }
+
+    /* quick neon pulse */
+    @keyframes pulseNeon{ 0%{ box-shadow:0 0 0 rgba(124,58,237,0.0)}50%{ box-shadow:0 0 28px rgba(124,58,237,0.14)}100%{ box-shadow:0 0 0 rgba(124,58,237,0.0)} }
+
+    /* card 3D perspective container */
+    .persp{ perspective: 1200px; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 via-white to-cyan-50 min-h-screen text-slate-900 dark:bg-gradient-to-br dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 dark:text-slate-100">
+
+  <!-- NAVBAR with logo -->
+  <header class="sticky top-0 z-50 backdrop-blur-md glass border-b border-white/10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center gap-4">
+          <!-- Logo SVG -->
+          <div class="w-10 h-10 rounded-lg bg-white/90 dark:bg-slate-800/70 flex items-center justify-center shadow-md">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2" y="4" width="20" height="16" rx="3" fill="#7C3AED"/>
+              <path d="M6 9H18" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="9" cy="15" r="1.2" fill="#06B6D4"/>
+              <circle cx="15" cy="15" r="1.2" fill="#06B6D4"/>
+            </svg>
+          </div>
+          <a class="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-teal-400">NURALAM KI DUKAAN</a>
+          <nav class="hidden md:flex gap-4 text-sm font-medium">
+            <a class="px-3 py-2 rounded-md hover:bg-white/20">Home</a>
+            <a class="px-3 py-2 rounded-md hover:bg-white/20">Deals</a>
+            <a class="px-3 py-2 rounded-md hover:bg-white/20">Categories</a>
+            <a class="px-3 py-2 rounded-md hover:bg-white/20">Support</a>
+          </nav>
+        </div>
+
+        <div class="flex-1 mx-6 hidden sm:block">
+          <div class="relative">
+            <input id="search" type="search" placeholder="Search products, brands and more" class="w-full rounded-full border border-transparent bg-white/90 dark:bg-slate-800/70 py-2 px-4 pr-12 focus:outline-none focus:ring-4 focus:ring-indigo-300/40"/>
+            <button id="searchBtn" class="absolute right-1 top-1/2 -translate-y-1/2 bg-gradient-to-r from-indigo-600 to-teal-400 text-white px-3 py-1.5 rounded-full text-sm neon">Search</button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <button id="cartBtn" class="relative inline-flex items-center gap-2 px-3 py-2 rounded-full hover:scale-105 transition-transform bg-white/80 dark:bg-slate-800/60">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4"/></svg>
+            <span id="cartCount" class="text-sm font-semibold">0</span>
+          </button>
+          <button class="hidden sm:inline-block px-4 py-2 text-sm bg-gradient-to-r from-indigo-600 to-teal-400 text-white rounded-lg shadow-md neon animate-[pulseNeon_3s_infinite]">Sign in</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+      <div class="md:col-span-2">
+        <div class="bg-gradient-to-r from-indigo-500 to-teal-400 text-white rounded-2xl p-8 shadow-2xl persp overflow-hidden">
+          <div class="flex items-start gap-6">
+            <div class="flex-1">
+              <h1 class="text-3xl md:text-4xl font-extrabold">Bring the sparkle home ✨</h1>
+              <p class="mt-3 text-lg opacity-95">Flashy deals, colorful products, and a playful shopping experience — curated for you.</p>
+              <div class="mt-6 flex gap-3">
+                <button id="shopNow" class="px-5 py-3 bg-white text-indigo-600 rounded-lg font-semibold shadow-lg hover:scale-105 transition transform neon">Shop Now</button>
+                <button class="px-5 py-3 border border-white/40 rounded-lg">Explore categories</button>
+              </div>
+            </div>
+            <div class="w-48 h-48 hero-float rounded-xl overflow-hidden relative hidden sm:block">
+              <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&q=60&auto=format&fit=crop" class="object-cover w-full h-full scale-105" alt="hero product" />
+              <div class="absolute -bottom-3 -right-3 bg-white/90 text-sm text-indigo-600 px-3 py-1 rounded-full font-semibold shadow-lg">Hot</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="hidden md:block">
+        <div class="glass rounded-xl p-4 card-shadow">
+          <div class="text-sm font-semibold">Limited time</div>
+          <div class="mt-2 text-lg font-bold">Flat 25% off for early birds</div>
+          <p class="mt-3 text-sm text-gray-600 dark:text-gray-300">Use code: NURA25 at checkout (demo)</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+    <div class="flex gap-6">
+      <aside class="w-64 hidden lg:block">
+        <div class="bg-white/70 dark:bg-slate-800/60 rounded-lg p-4 card-shadow glass">
+          <h3 class="font-semibold">Filters</h3>
+          <div class="mt-3">
+            <label class="block text-sm font-medium">Category</label>
+            <select id="categoryFilter" class="mt-2 w-full rounded-md border-gray-200 bg-white/80 dark:bg-slate-700/60">
+              <option value="all">All</option>
+            </select>
+          </div>
+          <div class="mt-4">
+            <label class="block text-sm font-medium">Sort by</label>
+            <select id="sortBy" class="mt-2 w-full rounded-md border-gray-200 bg-white/80 dark:bg-slate-700/60">
+              <option value="pop">Popular</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+            </select>
+          </div>
+        </div>
+      </aside>
+
+      <section class="flex-1">
+        <div class="mb-6 flex items-center justify-between">
+          <h2 class="text-xl font-bold">Featured products</h2>
+          <div class="text-sm text-gray-600 dark:text-gray-300">Showing <span id="shownCount">0</span> products</div>
+        </div>
+
+        <div id="productGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- CART SIDEBAR -->
+  <aside id="cartSidebar" class="fixed right-0 top-0 h-full w-96 bg-white/95 dark:bg-slate-900 shadow-xl transform translate-x-full transition-transform duration-300 z-50 overflow-auto">
+    <div class="p-6">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold">Your cart</h3>
+        <button id="closeCart" class="text-sm">Close</button>
+      </div>
+
+      <div id="cartItems" class="mt-4 space-y-4"></div>
+
+      <div class="mt-6 border-t pt-4">
+        <div class="flex items-center justify-between text-lg font-semibold">Total <span id="cartTotal">₹0</span></div>
+        <button id="checkout" class="mt-4 w-full py-3 bg-gradient-to-r from-indigo-600 to-teal-400 text-white rounded-lg neon">Checkout</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- QUICK VIEW MODAL -->
+  <div id="modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
+    <div class="bg-white dark:bg-slate-800 rounded-xl p-6 w-11/12 md:w-3/4 lg:w-1/2">
+      <div class="flex gap-6">
+        <img id="modalImg" src="" class="w-48 h-48 object-cover rounded-lg" alt="product"/>
+        <div>
+          <h3 id="modalTitle" class="text-xl font-bold"></h3>
+          <p id="modalDesc" class="mt-2 text-sm text-gray-600 dark:text-gray-300"></p>
+          <div class="mt-4 text-lg font-semibold" id="modalPrice"></div>
+          <div class="mt-6 flex gap-3">
+            <button id="modalAdd" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-teal-400 text-white rounded shadow">Add to cart</button>
+            <button id="modalClose" class="px-4 py-2 border rounded">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="mt-12 bg-white/80 dark:bg-slate-900/60 border-t">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-sm text-gray-700 dark:text-gray-300">
+      <div class="flex flex-col md:flex-row md:justify-between gap-4">
+        <div>
+          <div class="font-bold">NURALAM KI DUKAAN</div>
+          <div class="mt-2">Thank you for shopping local — built with ❤️ for simplicity.</div>
+        </div>
+        <div class="flex gap-4">
+          <a>Terms</a>
+          <a>Privacy</a>
+          <a>Help center</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Updated flashy products (names match images)
+    const products = [
+      {id:1,name:'Wireless Headphones',price:1999,cat:'Electronics',img:'https://images.unsplash.com/photo-1585386959984-a41552231693?w=800&q=60&auto=format&fit=crop',desc:'High quality wireless headphones with long battery life.'},
+      {id:2,name:'Running Shoes',price:2799,cat:'Fashion',img:'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&q=60&auto=format&fit=crop',desc:'Lightweight and durable running shoes.'},
+      {id:3,name:'Smart Watch',price:3499,cat:'Electronics',img:'https://images.unsplash.com/photo-1517430816045-df4b7de1cd0f?w=800&q=60&auto=format&fit=crop',desc:'Track your fitness and notifications easily.'},
+      {id:4,name:'Coffee Maker',price:4499,cat:'Home',img:'https://images.unsplash.com/photo-1560880125-9e00a9e8d9d7?w=800&q=60&auto=format&fit=crop',desc:'Brew the perfect cup every morning.'},
+      {id:5,name:'Sunglasses',price:899,cat:'Fashion',img:'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800&q=60&auto=format&fit=crop',desc:'Stylish UV-protected sunglasses.'},
+      {id:6,name:'Backpack',price:1599,cat:'Fashion',img:'https://images.unsplash.com/photo-1526178618276-4f14c9f6d7a0?w=800&q=60&auto=format&fit=crop',desc:'Durable and waterproof backpack for travel.'},
+      {id:7,name:'Bluetooth Speaker',price:2299,cat:'Electronics',img:'https://images.unsplash.com/photo-1580894732444-3c4bdc2f2608?w=800&q=60&auto=format&fit=crop',desc:'Portable speaker with deep bass sound.'},
+      {id:8,name:'Desk Lamp',price:699,cat:'Home',img:'https://images.unsplash.com/photo-1505691723518-36a5ac3be353?w=800&q=60&auto=format&fit=crop',desc:'Minimal design lamp with adjustable brightness.'}
+    ];
+
+    // State
+    let cart = {};
+    let shown = products.slice();
+
+    // Elements
+    const productGrid = document.getElementById('productGrid');
+    const shownCount = document.getElementById('shownCount');
+    const cartBtn = document.getElementById('cartBtn');
+    const cartSidebar = document.getElementById('cartSidebar');
+    const closeCart = document.getElementById('closeCart');
+    const cartItems = document.getElementById('cartItems');
+    const cartCount = document.getElementById('cartCount');
+    const cartTotal = document.getElementById('cartTotal');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const sortBy = document.getElementById('sortBy');
+    const search = document.getElementById('search');
+    const searchBtn = document.getElementById('searchBtn');
+    const shopNow = document.getElementById('shopNow');
+
+    // Modal
+    const modal = document.getElementById('modal');
+    const modalImg = document.getElementById('modalImg');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalDesc = document.getElementById('modalDesc');
+    const modalPrice = document.getElementById('modalPrice');
+    const modalAdd = document.getElementById('modalAdd');
+    const modalClose = document.getElementById('modalClose');
+
+    let currentModalProduct = null;
+
+    function init() {
+      populateCategories();
+      renderProducts(shown);
+      updateCartDisplay();
+      attachEvents();
+      enableTilt();
+    }
+
+    function populateCategories(){
+      const cats = Array.from(new Set(products.map(p=>p.cat)));
+      cats.forEach(c=>{ const opt = document.createElement('option'); opt.value=c; opt.textContent=c; categoryFilter.appendChild(opt); });
+    }
+
+    function renderProducts(list){
+      productGrid.innerHTML='';
+      shownCount.textContent = list.length;
+      list.forEach(p=>{
+        const el = document.createElement('article');
+        el.className = 'bg-white/90 dark:bg-slate-800/70 rounded-2xl overflow-hidden card-shadow tilt shiny relative';
+        el.innerHTML = `
+          <div class="inner relative">
+            <div class="h-40 overflow-hidden rounded-t-2xl">
+              <img src="${p.img}" alt="${p.name}" class="w-full h-full object-cover transform transition-transform duration-500 hover:scale-110"/>
+            </div>
+            <div class="p-4">
+              <h4 class="font-semibold text-sm truncate">${p.name}</h4>
+              <div class="mt-2 flex items-center justify-between">
+                <div class="text-indigo-600 font-bold">₹${p.price}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-300">${p.cat}</div>
+              </div>
+              <div class="mt-3 flex gap-2">
+                <button class="addBtn px-3 py-1 text-sm bg-gradient-to-r from-indigo-600 to-teal-400 text-white rounded shadow" data-id="${p.id}">Add</button>
+                <button class="viewBtn px-3 py-1 text-sm border rounded" data-id="${p.id}">Quick view</button>
+              </div>
+            </div>
+          </div>`;
+        productGrid.appendChild(el);
+      });
+      attachProductButtons();
+    }
+
+    function attachProductButtons(){
+      document.querySelectorAll('.addBtn').forEach(b=>b.onclick=(e)=>{addToCart(Number(e.target.dataset.id));});
+      document.querySelectorAll('.viewBtn').forEach(b=>b.onclick=(e)=>{openModal(Number(e.target.dataset.id));});
+    }
+
+    function addToCart(id, qty=1){ cart[id] = (cart[id]||0) + qty; updateCartDisplay(); }
+    function removeFromCart(id){ delete cart[id]; updateCartDisplay(); }
+
+    function updateCartDisplay(){
+      cartItems.innerHTML='';
+      const ids = Object.keys(cart).map(Number);
+      let total = 0; let count = 0;
+      if(ids.length===0){ cartItems.innerHTML = '<div class="text-gray-500 mt-4">Your cart is empty.</div>'; }
+      else { ids.forEach(id=>{ const p = products.find(x=>x.id===id); const qty = cart[id]; const row = document.createElement('div'); row.className='flex items-center gap-3'; row.innerHTML = `\n            <img src="${p.img}" class="w-16 h-16 object-cover rounded" />\n            <div class="flex-1">\n              <div class="font-medium text-sm">${p.name}</div>\n              <div class="text-sm text-gray-500">₹${p.price} x ${qty}</div>\n            </div>\n            <div class="text-sm font-medium">₹${p.price*qty}</div>\n            <div>\n              <button class="ml-2 text-red-500 removeBtn" data-id="${id}">Remove</button>\n            </div>`; cartItems.appendChild(row); total += p.price*qty; count += qty; }); }
+      cartCount.textContent = count; cartTotal.textContent = '₹' + total; document.querySelectorAll('.removeBtn').forEach(b=>b.onclick=(e)=>{removeFromCart(Number(e.target.dataset.id));});
+    }
+
+    function attachEvents(){
+      cartBtn.onclick = ()=>{cartSidebar.classList.remove('translate-x-full')};
+      closeCart.onclick = ()=>{cartSidebar.classList.add('translate-x-full')};
+      searchBtn.onclick = performSearch;
+      shopNow.onclick = ()=>{window.scrollTo({top:document.querySelector('main').offsetTop, behavior:'smooth'});}
+      categoryFilter.onchange = applyFilters;
+      sortBy.onchange = applyFilters;
+      document.getElementById('checkout').onclick = ()=>{alert('Checkout is a demo. Integrate payments to complete orders.');}
+
+      // Modal
+      modalClose.onclick = ()=>{modal.classList.add('hidden')};
+      modal.onclick = (e)=>{ if(e.target===modal) modal.classList.add('hidden') };
+      modalAdd.onclick = ()=>{ if(currentModalProduct) { addToCart(currentModalProduct.id); modal.classList.add('hidden'); } };
+
+      // small UX: keyboard '/' to focus search
+      window.addEventListener('keydown', (e)=>{ if(e.key==='/' && document.activeElement.tagName!=='INPUT') { e.preventDefault(); search.focus(); } });
+    }
+
+    function openModal(id){
+      const p = products.find(x=>x.id===id); currentModalProduct = p;
+      modalImg.src = p.img; modalTitle.textContent = p.name; modalDesc.textContent = p.desc; modalPrice.textContent = '₹'+p.price; modal.classList.remove('hidden');
+    }
+
+    function performSearch(){
+      const q = search.value.trim().toLowerCase();
+      const filtered = products.filter(p=> p.name.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q));
+      shown = filtered; applySort(); renderProducts(shown);
+    }
+
+    function applyFilters(){
+      const cat = categoryFilter.value; const s = sortBy.value;
+      shown = products.filter(p=> cat==='all' ? true : p.cat===cat);
+      applySort(); renderProducts(shown);
+    }
+
+    function applySort(){ const s = sortBy.value; if(s==='price-asc') shown.sort((a,b)=>a.price-b.price); else if(s==='price-desc') shown.sort((a,b)=>b.price-a.price); else shown.sort((a,b)=>a.id-b.id); }
+
+    // FIXED: per-card tilt effect to avoid global 360 flips
+    function enableTilt(){
+      document.querySelectorAll('.tilt').forEach(card=>{
+        // ensure smooth transitions
+        card.style.transition = 'transform 300ms cubic-bezier(.2,.9,.3,1), box-shadow 300ms';
+        card.addEventListener('mousemove', (e)=>{
+          const rect = card.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          const px = (x / rect.width) - 0.5; // -0.5 .. 0.5
+          const py = (y / rect.height) - 0.5;
+          const maxTilt = 12; // degrees
+          const tiltY = px * maxTilt;
+          const tiltX = -py * maxTilt;
+          const scale = 1.03;
+          card.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale(${scale})`;
+          card.style.boxShadow = `${-tiltY*2}px ${tiltX*2}px 40px rgba(2,6,23,0.12)`;
+        });
+        card.addEventListener('mouseleave', ()=>{
+          card.style.transform = '';
+          card.style.boxShadow = '';
+        });
+      });
+    }
+
+    // Init
+    init();
+  </script>
+</body>
+</html>
